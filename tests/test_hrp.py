@@ -3,6 +3,7 @@ Unit tests for HRP implementation
 Run with: pytest tests/test_hrp.py -v
 """
 
+
 import pytest
 import pandas as pd
 import numpy as np

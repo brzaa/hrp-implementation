@@ -2,7 +2,6 @@
 ## Paper Validation: "Building Diversified Portfolios that Outperform Out-of-Sample"
 
 **Author:** Marcos López de Prado  
-**Implementation by me
 **Date:** October 2025
 
 ---

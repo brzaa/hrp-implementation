@@ -9,7 +9,7 @@
 
 ## 📋 Executive Summary
 
-This repository provides a Python implementation of López de Prado's Hierarchical Risk Parity (HRP) algorithm, designed to validate its out-of-sample performance against common benchmarks.
+This repository provides a Python implementation of López de Prado's [Hierarchical Risk Parity (HRP) algorithm](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2708678), designed to validate its out-of-sample performance against common benchmarks.
 
 **Key Finding:** In our specific test on the **S\&P 500 Financial Sector** from 2021-2024, HRP **did not outperform** the naive 1/N (equal-weight) portfolio. The difference in performance was not statistically significant.
 

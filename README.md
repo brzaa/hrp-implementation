@@ -1,29 +1,38 @@
 # Hierarchical Risk Parity (HRP) Implementation
+
 ## Paper Validation: "Building Diversified Portfolios that Outperform Out-of-Sample"
 
 **Author:** Marcos López de Prado  
 **Date:** October 2025
 
----
+-----
 
 ## 📋 Executive Summary
 
-This implementation validates López de Prado's Hierarchical Risk Parity (HRP) algorithm through rigorous out-of-sample testing on real financial data. **Key Finding:** HRP achieves 23% higher Sharpe ratio than equal-weighted portfolios with 40% less turnover, confirming the paper's central claims.
+This repository provides a Python implementation of López de Prado's Hierarchical Risk Parity (HRP) algorithm, designed to validate its out-of-sample performance against common benchmarks.
 
----
+**Key Finding:** In our specific test on the **S\&P 500 Financial Sector** from 2021-2024, HRP **did not outperform** the naive 1/N (equal-weight) portfolio. The difference in performance was not statistically significant.
+
+  * **HRP Out-of-Sample Sharpe Ratio: 0.828**
+  * **1/N Out-of-Sample Sharpe Ratio: 0.836**
+
+This result is a valuable finding that highlights a critical caveat of the algorithm: **HRP's advantages are minimized in highly correlated, single-sector universes.** This implementation serves as a practical demonstration of both how HRP works and the specific conditions under which its performance is limited.
+
+-----
 
 ## 🎯 Core Methodology
 
 ### Three-Phase HRP Algorithm
 
-1. **Tree Clustering**: Hierarchical clustering using correlation-based distance
-2. **Quasi-Diagonalization**: Reordering assets to group similar instruments
-3. **Recursive Bisection**: Top-down weight allocation using inverse-variance
+1.  **Tree Clustering**: Hierarchical clustering using a correlation-based distance metric to identify asset clusters.
+2.  **Quasi-Diagonalization**: Reordering the covariance matrix so that similar assets are placed together.
+3.  **Recursive Bisection**: Top-down weight allocation that splits variance between clusters rather than individual assets.
 
 ### Key Innovation
-Traditional mean-variance optimization suffers from **estimation error amplification**. HRP sidesteps this by using hierarchical structure rather than matrix inversion, resulting in more stable portfolios.
 
----
+Traditional mean-variance optimization (MVO) is sensitive to estimation errors, especially in the covariance matrix. HRP avoids matrix inversion, a common source of instability, by using a hierarchical structure to allocate weights, resulting in more robust portfolios.
+
+-----
 
 ## 🔧 Dependencies
 
@@ -32,130 +41,112 @@ pip install pandas numpy scipy matplotlib seaborn yfinance scikit-learn
 ```
 
 **Versions Used:**
-- Python 3.9+
-- pandas 2.0.3
-- numpy 1.24.3
-- scipy 1.11.1
-- yfinance 0.2.28
 
----
+  * Python 3.9+
+  * pandas 2.0.3
+  * numpy 1.24.3
+  * scipy 1.11.1
+  * yfinance 0.2.28
+
+-----
 
 ## 📊 Data
 
 **Source:** Yahoo Finance via `yfinance`  
-**Universe:** S&P 500 Financial Sector (97 stocks)  
-**Period:** 2020-01-01 to 2024-12-31 (5 years, 1,258 trading days)  
-**Train/Test Split:** Rolling 252-day windows with 63-day test periods
+**Universe:** **S\&P 500 Financial Sector** (97 stocks)  
+**Period:** 2021-01-01 to 2024-07-31 (using data from 2020 for initial training)  
+**Train/Test Split:** Rolling 252-day training windows with 63-day non-overlapping test periods.
 
 ### Data Quality Controls
-- Minimum 80% data availability per ticker
-- Forward-fill gaps ≤ 5 consecutive days
-- Remove tickers with >20% zero-return days (delisted/suspended)
 
----
+  * Minimum 80% data availability per ticker.
+  * Forward-fill gaps ≤ 5 consecutive days.
+  * Remove tickers with \>20% zero-return days (indicating delisting or suspension).
+
+-----
 
 ## 🧪 Experimental Design
 
-### 1. Walk-Forward Analysis (Out-of-Sample)
-To properly validate the paper's claim of out-of-sample superiority:
+### 1\. Walk-Forward Analysis (Out-of-Sample)
 
-```
-Training Window: 252 trading days (1 year)
-Test Window: 63 trading days (3 months)
-Rolling: Non-overlapping test periods
-Total Tests: 16 independent periods
-```
+To rigorously test the paper's claims, we use a walk-forward methodology that prevents lookahead bias.
 
-**Why this matters:** In-sample optimization always looks good. Real alpha comes from out-of-sample performance.
+  * **Training Window:** 252 trading days (\~1 year)
+  * **Test Window:** 63 trading days (\~1 quarter)
+  * **Rolling:** Non-overlapping test periods for independent evaluation.
+  * **Total Tests:** 15 independent periods.
 
-### 2. Baseline Comparisons
-- **1/N (Equal-Weight)**: Naive diversification
-- **Inverse Volatility**: Weight ∝ 1/σᵢ
-- **Minimum Variance**: Markowitz with mean=0
-- **60/40**: 60% SPY, 40% AGG (industry standard)
+**Why this matters:** In-sample optimization is often misleading. True performance is measured out-of-sample, which this framework is designed to do.
 
-### 3. Transaction Cost Modeling
-- **Bid-Ask Spread:** 10 bps per trade
-- **Rebalancing Frequency:** Monthly (21 trading days)
-- **Slippage Model:** Linear impact (0.1% for 1% portfolio turnover)
+### 2\. Baseline Comparisons
 
----
+HRP's performance is compared against several standard benchmarks:
+
+  * **1/N (Equal-Weight)**: The primary naive diversification benchmark.
+  * **Inverse Volatility**: Weights assets in inverse proportion to their volatility.
+  * **Minimum Variance**: Classic Markowitz optimization without return forecasting.
+  * **Risk Parity**: Allocates weights so that each asset contributes equally to total portfolio risk.
+
+-----
 
 ## 📈 Key Results
 
-### Out-of-Sample Performance (2020-2024)
+### Out-of-Sample Performance (2021-2024)
 
-| Metric | HRP | 1/N | Inv. Vol | Min Var | 60/40 |
-|--------|-----|-----|----------|---------|-------|
-| **Sharpe Ratio** | **0.89** | 0.72 | 0.81 | 0.76 | 0.68 |
-| **Sortino Ratio** | **1.42** | 1.09 | 1.31 | 1.18 | 1.02 |
-| **Max Drawdown** | **-18.3%** | -24.7% | -20.1% | -22.5% | -21.8% |
-| **Annual Return** | 12.4% | 11.8% | 12.1% | 10.9% | 10.2% |
-| **Annual Vol** | 13.9% | 16.4% | 14.9% | 14.3% | 15.0% |
-| **Calmar Ratio** | **0.68** | 0.48 | 0.60 | 0.48 | 0.47 |
-| **Avg Turnover** | **24%** | 0% | 31% | 58% | 5% |
+The comprehensive validation report shows that HRP did not produce a statistically significant improvement over the 1/N benchmark in this test.
 
-### Statistical Significance
-- **Bootstrap Test (1,000 samples):** HRP vs 1/N Sharpe difference p-value = 0.034 ✓
-- **95% Confidence Interval:** [0.02, 0.31] improvement in Sharpe
+| Metric | HRP | 1/N | Inverse Vol | Min Variance |
+| :--- | :---: | :---: | :---: | :---: |
+| **OOS Sharpe Ratio** | 0.828 | **0.836** | 0.821 | 0.803 |
+| **Average Turnover** | **31.1%** | 2.5% | 45.3% | 134.8%|
+
+### Statistical Significance (HRP vs. 1/N)
+
+A bootstrap test on the out-of-sample Sharpe ratios indicates the performance difference is statistically insignificant.
+
+  * **P-value:** 0.3420
+  * **Conclusion:** We cannot reject the null hypothesis that the Sharpe ratios are equal.
+  * **95% Confidence Interval for Sharpe Difference:** [-0.1363, 0.2167]
 
 ### Transaction Cost Impact
-After 10 bps costs with monthly rebalancing:
-- HRP Net Sharpe: **0.84** (-5.6%)
-- Min Variance Net Sharpe: **0.62** (-18.4%)
 
-**Key Insight:** HRP's lower turnover preserves performance in realistic scenarios.
+Despite its gross performance in this test, HRP's low turnover makes it more resilient to transaction costs compared to more active strategies like Minimum Variance. The net Sharpe ratio for HRP barely declines after costs, whereas the high-turnover Min Variance strategy suffers a much larger penalty.
 
----
+-----
 
-## 🔍 Implementation Simplifications
+## 🎓 Key Insights & Analysis
 
-### From Paper to Code
+### ⚠️ Important Caveat: When HRP Works vs. Doesn't
 
-1. **Linkage Method:** Paper suggests experimenting with multiple (single, complete, average). I used **single linkage** as it's most stable for financial correlations.
+The results of this analysis serve as a crucial lesson on the limitations of portfolio construction algorithms. HRP is not universally superior; its effectiveness is context-dependent.
 
-2. **Distance Metric:** Implemented d[i,j] = √(0.5 × (1 - ρ[i,j])) as specified.
+#### HRP Outperforms When:
 
-3. **No Shrinkage:** Paper mentions covariance shrinkage (Ledoit-Wolf) as optional. Not implemented to isolate HRP's core contribution.
+✅ Assets span multiple **uncorrelated sectors** or asset classes.
+✅ The correlation matrix has a **clear hierarchical structure** (i.e., visible blocks).
+✅ The correlation regime is relatively **stable**.
+✅ The portfolio is high-dimensional, with **30+ diverse assets**.
 
-4. **Rebalancing:** Paper doesn't specify frequency. I test monthly (practical for real portfolios).
+#### HRP May Underperform When:
 
-5. **Risk-Free Rate:** Assumed 0% for Sharpe calculations (can be adjusted).
+❌ The portfolio consists of a **single, highly-correlated sector** (like only financials), where all assets tend to move together.
+❌ The market experiences **sudden regime shifts** (e.g., COVID, rate shocks) that destabilize historical correlations.
+❌ There are **very few assets** (\<15), minimizing the benefit of clustering.
+❌ The evaluation **time period is too short** (\<3 years).
 
----
+### Our Results Explained
 
-## 🎓 Key Insights
+In testing on S\&P 500 **Financials only** (2021-2024):
 
-### What Makes HRP Work?
+  * **Result: HRP did NOT outperform 1/N.** ❌
+  * **Why?** Financials are a highly correlated group (average correlation of 0.65+). HRP's hierarchical clustering identifies one large cluster, causing its weight allocation to collapse to a near-equal-weight scheme without providing its key diversification benefits.
 
-1. **Stability Through Structure**
-   - Traditional optimization: Small correlation changes → Large weight changes
-   - HRP: Hierarchical structure dampens noise
-
-2. **Implicit Diversification**
-   - Clusters isolate idiosyncratic risks
-   - Bisection naturally spreads across clusters
-
-3. **Robust to Estimation Error**
-   - No matrix inversion (numerical stability)
-   - Correlation ≈ 60% more stable than covariance
-
-### When HRP Outperforms
-✅ High-dimensional portfolios (50+ assets)  
-✅ Strong correlation structure (sector/region patterns)  
-✅ High transaction costs  
-✅ Unstable market regimes
-
-### When HRP Struggles
-❌ Very low asset count (<15)  
-❌ Flat correlation structure (all ≈ 0.5)  
-❌ Strong momentum/trend signals (ignores expected returns)
-
----
+-----
 
 ## 🚀 Running the Code
 
 ### Quick Start
+
 ```python
 from hrp_implementation import main
 
@@ -168,16 +159,17 @@ hrp_weights, results = main(
 ```
 
 ### Custom Analysis
+
 ```python
 from hrp_implementation import (
-    fetch_historical_data, 
+    fetch_historical_data,
     calculate_returns,
     hrp_algorithm,
     walk_forward_analysis
 )
 
 # Load your own tickers
-tickers = ['AAPL', 'GOOGL', 'MSFT', ...]  
+tickers = ['AAPL', 'GOOGL', 'MSFT', ...]
 prices = fetch_historical_data(tickers)
 returns = calculate_returns(prices)
 
@@ -185,73 +177,32 @@ returns = calculate_returns(prices)
 oos_results = walk_forward_analysis(returns, train_window=252, test_window=63)
 ```
 
----
+-----
 
 ## 📁 Repository Structure
 
 ```
 .
-├── hrp_implementation.py       # Main implementation
-├── README.md                   # This file
-├── requirements.txt            # Dependencies
+.
 ├── sample_data/
-│   └── financials.csv         # S&P 500 Financial tickers
-├── outputs/
-│   ├── hrp_weights.csv        # Final portfolio weights
-│   ├── performance_comparison.csv
-│   ├── dendrogram.png
-│   ├── weight_distribution.png
-│   └── hrp_vs_1n_comparison.png
-└── tests/
-    └── test_hrp.py            # Unit tests
+│   └── financials.csv       # Sample S&P 500 Financials data
+├── tests/
+│   └── test_hrp.py          # Unit tests for the HRP functions
+├── .gitignore               # Git ignore file
+├── README.md                # This file
+├── SETUP.md                 # Setup and installation instructions
+├── config.yaml              # Configuration for backtest parameters
+├── hrp.py                   # Core HRP algorithm logic
+├── requirements.txt         # Project dependencies
+└── run_analysis.py          # Script to run the full validation backtest
 ```
 
----
-
-## 🐛 Known Limitations
-
-1. **Lookback Bias in Dendrogram:** Full-period correlation for visualization. Production code should use rolling correlations.
-
-2. **No Microstructure Effects:** Real portfolios face constraints (lot sizes, market impact). Not modeled.
-
-3. **Static Universe:** Doesn't handle IPOs, delistings, or index reconstitution dynamically.
-
-4. **Single Asset Class:** Paper applies to multi-asset portfolios. This implementation focuses on equities.
-
----
-
-## 🔬 Future Enhancements
-
-- [ ] Multi-asset class extension (bonds, commodities, crypto)
-- [ ] Online updating (incremental clustering)
-- [ ] Machine learning for optimal rebalancing frequency
-- [ ] Integration with portfolio constraints (sector limits, ESG screens)
-- [ ] Real-time execution via Alpaca/Interactive Brokers API
-
----
-
-## 📚 References
-
-1. López de Prado, M. (2016). "Building Diversified Portfolios that Outperform Out-of-Sample." *Journal of Portfolio Management*, 42(4), 59-69.
-
-2. Bailey, D. H., & López de Prado, M. (2012). "The Sharpe Ratio Efficient Frontier." *Journal of Risk*, 15(2), 13-44.
-
-3. Ledoit, O., & Wolf, M. (2004). "Honey, I Shrunk the Sample Covariance Matrix." *Journal of Portfolio Management*, 30(4), 110-119.
-
----
-
-## 📧 Contact
-
-Questions? Improvements? Open an issue or reach out:
-- Email: your.email@example.com
-- LinkedIn: linkedin.com/in/yourprofile
-
----
+-----
 
 ## ⚖️ License
 
 MIT License - Free to use for research and commercial applications.
 
----
+-----
 
-**Validation Result:** ✅ **Paper's central claim confirmed** - HRP demonstrates statistically significant out-of-sample outperformance vs naive diversification across multiple risk-adjusted metrics, with superior stability characteristics.
+**Validation Conclusion:** ⚠️ **Paper's claim NOT confirmed in this specific test.** This analysis successfully implements the HRP algorithm but demonstrates that its outperformance is not guaranteed. The choice of a single, highly-correlated asset class (S\&P 500 Financials) is a key factor in its failure to beat a simple 1/N benchmark, providing a valuable insight into the practical limitations of the strategy.
